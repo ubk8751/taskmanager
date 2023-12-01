@@ -77,15 +77,18 @@ Storing sensitive information like database credentials in ConfigMaps is a poten
 
 ### Security Considerations and Mitigations:
 * Secure Communication:
+
        * Implement HTTPS for communication between services to encrypt data in transit. 
        * Use authentication tokens and validate user identity during API requests to prevent unauthorized access.
        * Utilize Kubernetes Secrets instead of ConfigMaps for sensitive information, as Secrets are more secure and can be encrypted at rest.
 * Database Security:
+
        * Ensure that the database is properly configured with access controls and restricted permissions.
        * Use strong and unique passwords for database access.
        * Regularly update and patch the database system to address any security vulnerabilities.
 
 * Kubernetes RBAC:
+
        * Implement Role-Based Access Control (RBAC) in Kubernetes to control access to ConfigMaps, ensuring that only authorized entities can retrieve sensitive information.
        * Regularly review and audit RBAC policies to minimize the risk of unauthorized access.
        * Database Connection Pooling:
@@ -93,5 +96,6 @@ Storing sensitive information like database credentials in ConfigMaps is a poten
 * Implement database connection pooling to manage and optimize database connections, preventing potential security threats related to resource exhaustion.
 
 * Regular Security Audits:
+
        * Conduct regular security audits and vulnerability assessments to identify and address potential security issues promptly.
        * Stay informed about security best practices and updates related to the technologies and frameworks used in the application.
