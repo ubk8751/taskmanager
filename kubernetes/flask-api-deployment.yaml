@@ -17,6 +17,11 @@ spec:
           image: ubk8751/flask-api:latest
           ports:
             - containerPort: 5002
+          env:
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
           envFrom:
             - configMapRef:
                 name: flask-api-config

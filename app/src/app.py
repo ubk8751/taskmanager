@@ -36,11 +36,24 @@ import os
 from flask import Flask, render_template, redirect, request, flash, session, url_for
 from flask_login import LoginManager
 import requests
+from flask_session import Session
+from redis import Redis
 
 
 app = Flask(__name__, template_folder='ui/templates',
             static_folder='ui/static')
 app.config['SECRET_KEY'] = os.urandom(24)
+
+# Configure Flask-Session to use Redis
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'ui_session:'
+app.config['SESSION_REDIS'] = Redis(host=os.environ.get('REDIS_HOST', 'localhost'),
+                                   port=int(os.environ.get('REDIS_PORT', '6379')))
+
+# Initialize Flask-Session extension
+Session(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -68,16 +81,16 @@ def load_user(user_id):
 UM_SERVICE_NAME = 'user-management-service'
 UM_PORT = 5001
 
-UM_IP = UM_IP = os.environ.get('UM_HOST')
+UM_IP = 'flask-user-management-service'#os.environ.get('UM_HOST', 'loclahost')
 
-UM_URL = f'http://localhost:{UM_PORT}'
+UM_URL = f'http://{UM_IP}:{UM_PORT}'
 
 API_SERVICE_NAME = 'flask-api-service'
 API_PORT = 5002
 
-API_IP = os.environ.get('API_HOST')
+API_IP = 'flask-api-service'#os.environ.get('API_HOST', 'localhost')
 
-API_URL = f'http://localhost:{API_PORT}'
+API_URL = f'http://{API_IP}:{API_PORT}'
 
 
 @app.route('/')
@@ -116,7 +129,9 @@ def login():
                   'password': password},
             timeout=5)
         if response.status_code == 200:
-            session['user_id'] = response.json().get('user_id')
+            user_id = str(response.json().get('user_id'))
+            session.modified = True 
+            session['user_id'] = user_id
             flash('Login successful.')
             return redirect(url_for('index'))
         flash('Invalid username or password.')

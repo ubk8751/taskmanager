@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: flask-ui-config
 data:
-  API_HOST: "APIHOST"
-  UM_HOST: "UMHOST"
+  API_HOST: "flask-api-service"
+  UM_HOST: "flask-user-management-service"
 ---
 apiVersion: v1
 kind: ConfigMap

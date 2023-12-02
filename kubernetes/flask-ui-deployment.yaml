@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-ui
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: flask-ui
@@ -17,6 +17,11 @@ spec:
           image: ubk8751/flask-ui:latest
           ports:
             - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
           envFrom:
             - configMapRef:
                 name: flask-ui-config

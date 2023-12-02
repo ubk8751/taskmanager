@@ -4,3 +4,5 @@ Werkzeug==2.2.2
 requests
 psycopg2-binary
 flask-login
+flask_session
+redis
