@@ -4,3 +4,4 @@ kubernetes/dockerhub-secret.yaml
 folder_structure.txt
 *resetdb.py
 .pylintrc
+logs/*
