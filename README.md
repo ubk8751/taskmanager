@@ -1,4 +1,4 @@
-# Task Manager Application Description and Dataflow Diagram
+# Task Manager Application
 
 ## Application Description
 
@@ -118,6 +118,24 @@ The Task Manager Application is a Flask-based web application that integrates us
 
 
 ## Clone, Deploy and run
-To setup the environment, clone the directory
+To setup the environment, clone the directory (change command if you do not use ssh)
 
+    git clone git@github.com:ubk8751/taskmanager.git 
+
+Run minikube by entering
     
+    minikube start
+
+int a terminal where you have access to minikube. Then set up the application by running
+    
+    ./run.sh [-c]
+
+where the `-c` flag first cleans all deployments, services and configmaps that exists on your network, and tunnel into the application by running 
+
+    minikube tunnel
+
+The application should then be active on 
+
+    localhost:5000
+
+There it will ask you to log in, but you should not have an account available. Use the `Register` option to create a new user, then log in, which should provide you access to the taskmanager. There you can create and delete tasks.
