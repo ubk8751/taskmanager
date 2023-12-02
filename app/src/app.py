@@ -36,11 +36,24 @@ import os
 from flask import Flask, render_template, redirect, request, flash, session, url_for
 from flask_login import LoginManager
 import requests
+from flask_session import Session
+from redis import Redis
 
 
 app = Flask(__name__, template_folder='ui/templates',
             static_folder='ui/static')
 app.config['SECRET_KEY'] = os.urandom(24)
+
+# Configure Flask-Session to use Redis
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'ui_session:'
+app.config['SESSION_REDIS'] = Redis(host=os.environ.get('REDIS_HOST', 'localhost'),
+                                   port=int(os.environ.get('REDIS_PORT', '6379')))
+
+# Initialize Flask-Session extension
+Session(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -65,24 +78,17 @@ def load_user(user_id):
     return None
 
 
-UM_SERVICE_NAME = 'user_management-service'
+UM_SERVICE_NAME = 'user-management-service'
 UM_PORT = 5001
 
-if os.path.isfile("/var/run/secrets/kubernetes.io/serviceaccount/token"):
-    UM_IP = os.environ.get("KUBERNETES_SERVICE_HOST")
-else:
-    UM_IP = os.environ.get('UM_HOST')
+UM_IP = 'flask-user-management-service'#os.environ.get('UM_HOST', 'loclahost')
 
 UM_URL = f'http://{UM_IP}:{UM_PORT}'
 
 API_SERVICE_NAME = 'flask-api-service'
 API_PORT = 5002
 
-# Check if running inside a Kubernetes cluster
-if os.path.isfile("/var/run/secrets/kubernetes.io/serviceaccount/token"):
-    API_IP = os.environ.get("KUBERNETES_SERVICE_HOST")
-else:
-    API_IP = os.environ.get('API_HOST')
+API_IP = 'flask-api-service'#os.environ.get('API_HOST', 'localhost')
 
 API_URL = f'http://{API_IP}:{API_PORT}'
 
@@ -100,9 +106,11 @@ def index():
         return render_template('login.html')
     response_tasks = requests.get(f'{API_URL}/tasks', timeout=5)
     if response_tasks.status_code == 200:
-        tasks = response_tasks.json().get('tasks', []) if response_tasks.status_code == 200 else []
+        tasks = response_tasks.json().get(
+            'tasks', []) if response_tasks.status_code == 200 else []
         return render_template('index.html', tasks=tasks)
     return render_template('index.html', tasks=[])
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -121,7 +129,9 @@ def login():
                   'password': password},
             timeout=5)
         if response.status_code == 200:
-            session['user_id'] = response.json().get('user_id')
+            user_id = str(response.json().get('user_id'))
+            session.modified = True 
+            session['user_id'] = user_id
             flash('Login successful.')
             return redirect(url_for('index'))
         flash('Invalid username or password.')
@@ -142,6 +152,7 @@ def register():
         username = request.form.get('username')
         password = request.form.get('password')
         email = request.form.get('email')
+        app.logger.debug(f"UM_URL: {UM_URL}")
         response = requests.post(
             f'{UM_URL}/register',
             json={'username': username, 'password': password, 'email': email},
@@ -152,6 +163,7 @@ def register():
         flash('Failed to add user.')
 
     return render_template('register.html')
+
 
 @app.route('/tasks/add', methods=['POST'])
 def add_task():
@@ -181,6 +193,7 @@ def add_task():
     flash('Failed to add the task.')
     return redirect(url_for('index'))
 
+
 @app.route('/tasks/delete/<int:task_id>', methods=['GET', 'POST'])
 def delete_task(task_id):
     """
@@ -190,11 +203,11 @@ def delete_task(task_id):
         str: Redirects to the index page.
     """
     user_id = session.get('user_id')
-    
+
     if user_id is None:
         flash('Please log in to add a task.')
         return redirect(url_for('login'))
-    
+
     response = requests.post(f'{API_URL}/tasks/delete/{task_id}', timeout=5)
     if response.status_code == 200:
         flash('Task removed successfully.')

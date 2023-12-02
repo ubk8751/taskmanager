@@ -32,6 +32,8 @@ import os
 from flask import Flask, jsonify, request, render_template, redirect
 from flask_login import LoginManager, login_user
 from sqlalchemy import exc
+from flask_session import Session
+from redis import Redis
 
 from models import db, User
 
@@ -41,7 +43,6 @@ app = Flask(__name__, template_folder='../ui/templates',
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.init_app(app)
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -62,9 +63,16 @@ DB_PORT = os.environ.get('DB_PORT', '5432')
 DB_NAME = os.environ.get('DB_NAME', 'database')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://user:password@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+app.secret_key = os.urandom(24)
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'ui_session:'
+app.config['SESSION_REDIS'] = Redis(host=os.environ.get('REDIS_HOST', 'localhost'),
+                                    port=int(os.environ.get('REDIS_PORT', '6379')))
 
 db.init_app(app)
+Session(app)
 
 with app.app_context():
     # db.session.execute(text('DROP TABLE IF EXISTS "user" CASCADE'))
@@ -108,6 +116,7 @@ def create_user():
                     password=data['password'], email=data['email'])
     db.session.add(new_user)
     db.session.commit()
+    
     return redirect('/login')
 
 

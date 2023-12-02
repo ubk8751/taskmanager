@@ -45,7 +45,7 @@ DB_PORT = os.environ.get('DB_PORT', '5432')
 DB_NAME = os.environ.get('DB_NAME', 'database')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://user:password@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+app.secret_key = os.urandom(24)
 
 db.init_app(app)
 
@@ -101,7 +101,12 @@ def add_task():
 
     tasks = Task.query.all()
     print(tasks)
-    return jsonify({'message': 'Task added successfully', 'tasks': [{'id': task.id, 'task': task.task, 'description': task.description} for task in tasks]}), 200
+    return jsonify({'message': 'Task added successfully',
+                    'tasks': [{'id': task.id,
+                               'task': task.task,
+                               'description': task.description}
+                              for task in tasks]}), 200
+
 
 @app.route('/tasks/delete/<int:task_id>', methods=['GET', 'POST'])
 def delete_task(task_id):
